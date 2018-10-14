@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
-import reactor.cache.CacheFlux;
+//import reactor.cache.CacheFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Signal;
@@ -44,30 +44,30 @@ public class UserService {
         userMap.put(uid, user);
     }
 
-    public Mono<User> findUserById(Long uid) {
-        Holder holder = cacheManager.getCache(CACHE_NAME).get(uid, () -> new Holder(uid));
-        return Mono.just(holder).publishOn(schedulers[uid.hashCode() % schedulers.length])
+    public Mono<User> findUserById(Mono<HashMap> body, Long uid) {
+        return body.map(m -> cacheManager.getCache(CACHE_NAME).get(uid, () -> new Holder(uid)))
+                .publishOn(schedulers[uid.hashCode() % schedulers.length])
                 .map(h -> h.findUser());
     }
 
     public Flux<User> findUserList() {
-//        return Flux.create(cityFluxSink -> {
-//            getUserFlux().forEach(city -> {
-//                cityFluxSink.next(city);
-//            });
-//            cityFluxSink.complete();
-//        });
-
-        return CacheFlux.lookup(reader, KEY)
-                .onCacheMissResume(() -> {
-                    return Flux.create(cityFluxSink -> {
-                        getUserFlux().forEach(city -> {
-                            cityFluxSink.next(city);
-                        });
-                        cityFluxSink.complete();
-                    });
-                })
-                .andWriteWith(writer);
+        return Flux.create(cityFluxSink -> {
+            getUserFlux().forEach(city -> {
+                cityFluxSink.next(city);
+            });
+            cityFluxSink.complete();
+        });
+//
+//        return CacheFlux.lookup(reader, KEY)
+//                .onCacheMissResume(() -> {
+//                    return Flux.create(cityFluxSink -> {
+//                        getUserFlux().forEach(city -> {
+//                            cityFluxSink.next(city);
+//                        });
+//                        cityFluxSink.complete();
+//                    });
+//                })
+//                .andWriteWith(writer);
     }
 
     public class Holder {
@@ -129,13 +129,13 @@ public class UserService {
 //        }
 //        return (Signal) wrapper.get();
 //    }
-
-    @SuppressWarnings("unchecked")
-    private Function<String, Mono<List<Signal<User>>>> reader = k -> Mono
-            .justOrEmpty((Optional.ofNullable((List<User>) (cacheManager.getCache(CACHE_NAME).get(k, List.class)))))
-            .flatMap(v -> Flux.fromIterable(v).materialize().collectList());
-
-    private BiFunction<String, List<Signal<User>>, Mono<Void>> writer = (k, sigs) -> Flux.fromIterable(sigs)
-            .dematerialize().collectList().doOnNext(l -> cacheManager.getCache(CACHE_NAME).put(k, l)).then();
+//
+//    @SuppressWarnings("unchecked")
+//    private Function<String, Mono<List<Signal<User>>>> reader = k -> Mono
+//            .justOrEmpty((Optional.ofNullable((List<User>) (cacheManager.getCache(CACHE_NAME).get(k, List.class)))))
+//            .flatMap(v -> Flux.fromIterable(v).materialize().collectList());
+//
+//    private BiFunction<String, List<Signal<User>>, Mono<Void>> writer = (k, sigs) -> Flux.fromIterable(sigs)
+//            .dematerialize().collectList().doOnNext(l -> cacheManager.getCache(CACHE_NAME).put(k, l)).then();
 
 }

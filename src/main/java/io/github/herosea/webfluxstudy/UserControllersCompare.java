@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+
 /**
  *
  * @author nvwashi
@@ -31,7 +33,7 @@ public class UserControllersCompare {
 
     @GetMapping("/{uid}")
     public Mono<User> findUserById(@PathVariable("uid") Long uid) {
-        Mono<User> userMono = userService.findUserById(uid);
+        Mono<User> userMono = userService.findUserById(Mono.just(new HashMap()), uid);
         userMono.subscribe(user -> log.info(user.toString()));
         return userMono;
     }

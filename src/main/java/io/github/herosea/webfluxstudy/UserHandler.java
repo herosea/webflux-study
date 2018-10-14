@@ -3,11 +3,15 @@ package io.github.herosea.webfluxstudy;
 import io.github.herosea.webfluxstudy.domain.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyExtractor;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
 
 /**
  * Created by nvwashi on 2018/10/10.
@@ -27,8 +31,9 @@ public class UserHandler {
 
     public Mono<ServerResponse> getUser(ServerRequest request) {
         String userId = request.pathVariable("userId");
-        Mono<User> userMono = userService.findUserById(Long.parseLong(userId));
-        userMono.subscribe(user -> log.info(user.toString()));
+        Mono<HashMap> map = request.bodyToMono(HashMap.class);
+        Mono<User> userMono = userService.findUserById(map, Long.parseLong(userId));
+//        userMono.subscribe(user -> log.info(user.toString()));
         log.info("return " + userId);
         return ServerResponse.ok().body(userMono, User.class);
     }
